@@ -2,7 +2,7 @@
  *  Do not modify this file; it is automatically 
  *  generated and any modifications will be overwritten.
  *
- * @(#) xdc-D20
+ * @(#) xdc-E05
  */
 
 #define __nested__
@@ -1653,7 +1653,7 @@ __FAR__ const xdc_SizeT ti_sysbios_knl_Task_Module_State_terminatedQ__O = offset
  *  Define absolute path prefix for this executable's
  *  configuration generated files.
  */
-xdc__META(__ASM__, "@(#)__ASM__ = F:/fishbaby/project/code/simplelink_cc2640r2_sdk_1_50_00_58/examples/rtos/CC2640R2_LAUNCHXL/blestack/simple_peripheral_oad_onchip/tirtos/iar/config/app/configPkg/package/cfg/app_ble_prm3");
+xdc__META(__ASM__, "@(#)__ASM__ = D:/ti/fangdiuqi/examples/rtos/CC2640R2_LAUNCHXL/blestack/simple_peripheral_oad_onchip/tirtos/iar/config/app/configPkg/package/cfg/app_ble_prm3");
 
 /*
  *  ======== __ISA__ ========
@@ -1755,7 +1755,7 @@ xdc_Int xdc_runtime_Startup_getState__I(xdc_runtime_Types_ModuleId id) {
     return (0);
 }
 
-/* 
+/*
  * Startup_exec__I is an internal entry point called by target/platform
  * boot code. Boot code is not brought into a partial-link assembly. So,
  * without this pragma, whole program optimizers would otherwise optimize-out
@@ -1767,7 +1767,11 @@ xdc_Int xdc_runtime_Startup_getState__I(xdc_runtime_Types_ModuleId id) {
 
 #ifdef __GNUC__
 #if __GNUC__ >= 4
+#ifdef __llvm__
+xdc_Void xdc_runtime_Startup_exec__I(void) __attribute__ ((used));
+#else
 xdc_Void xdc_runtime_Startup_exec__I(void) __attribute__ ((externally_visible));
+#endif
 #endif
 #endif
 
@@ -1785,7 +1789,7 @@ xdc_Void xdc_runtime_Startup_exec__I(void)
  * ======== xdc.runtime.Reset TEMPLATE ========
  */
 
-/* 
+/*
  * Startup_reset__I is an internal entry point called by target/platform
  * boot code. Boot code is not brought into a partial-link assembly. So,
  * without this pragma, whole program optimizers would otherwise optimize-out
@@ -1797,7 +1801,11 @@ xdc_Void xdc_runtime_Startup_exec__I(void)
 
 #ifdef __GNUC__
 #if __GNUC__ >= 4
+#ifdef __llvm__
+xdc_Void xdc_runtime_Startup_reset__I(void) __attribute__ ((used));
+#else
 xdc_Void xdc_runtime_Startup_reset__I(void) __attribute__ ((externally_visible));
+#endif
 #endif
 #endif
 
@@ -2514,7 +2522,9 @@ Void ATTRIBUTE *_realloc_r(struct _reent *rptr, Void *ptr, SizeT size)
 #if defined (__ICCARM__)
 #pragma location = ".data_ti_sysbios_BIOS_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+ti_sysbios_BIOS_Module_State__ ti_sysbios_BIOS_Module__state__V __attribute__ ((section(".data:ti_sysbios_BIOS_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 ti_sysbios_BIOS_Module_State__ ti_sysbios_BIOS_Module__state__V __attribute__ ((section(".data_ti_sysbios_BIOS_Module__state__V")));
 #endif
@@ -2791,7 +2801,9 @@ ti_sysbios_family_arm_cc26xx_Timer_Object__ ti_sysbios_family_arm_cc26xx_Timer_O
 #if defined (__ICCARM__)
 #pragma location = ".data_ti_sysbios_family_arm_cc26xx_Timer_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+ti_sysbios_family_arm_cc26xx_Timer_Module_State__ ti_sysbios_family_arm_cc26xx_Timer_Module__state__V __attribute__ ((section(".data:ti_sysbios_family_arm_cc26xx_Timer_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 ti_sysbios_family_arm_cc26xx_Timer_Module_State__ ti_sysbios_family_arm_cc26xx_Timer_Module__state__V __attribute__ ((section(".data_ti_sysbios_family_arm_cc26xx_Timer_Module__state__V")));
 #endif
@@ -2906,7 +2918,9 @@ __FAR__ const CT__ti_sysbios_family_arm_cc26xx_Timer_startupNeeded ti_sysbios_fa
 #if defined (__ICCARM__)
 #pragma location = ".data_ti_sysbios_family_arm_cc26xx_TimestampProvider_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+ti_sysbios_family_arm_cc26xx_TimestampProvider_Module_State__ ti_sysbios_family_arm_cc26xx_TimestampProvider_Module__state__V __attribute__ ((section(".data:ti_sysbios_family_arm_cc26xx_TimestampProvider_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 ti_sysbios_family_arm_cc26xx_TimestampProvider_Module_State__ ti_sysbios_family_arm_cc26xx_TimestampProvider_Module__state__V __attribute__ ((section(".data_ti_sysbios_family_arm_cc26xx_TimestampProvider_Module__state__V")));
 #endif
@@ -3054,7 +3068,9 @@ __T1_ti_sysbios_family_arm_m3_Hwi_Module_State__excStack ti_sysbios_family_arm_m
 #if defined (__ICCARM__)
 #pragma location = ".data_ti_sysbios_family_arm_m3_Hwi_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+ti_sysbios_family_arm_m3_Hwi_Module_State__ ti_sysbios_family_arm_m3_Hwi_Module__state__V __attribute__ ((section(".data:ti_sysbios_family_arm_m3_Hwi_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 ti_sysbios_family_arm_m3_Hwi_Module_State__ ti_sysbios_family_arm_m3_Hwi_Module__state__V __attribute__ ((section(".data_ti_sysbios_family_arm_m3_Hwi_Module__state__V")));
 #endif
@@ -4110,7 +4126,9 @@ ti_sysbios_knl_Clock_Object__ ti_sysbios_knl_Clock_Object__table__V[1] = {
 #if defined (__ICCARM__)
 #pragma location = ".data_ti_sysbios_knl_Clock_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+ti_sysbios_knl_Clock_Module_State__ ti_sysbios_knl_Clock_Module__state__V __attribute__ ((section(".data:ti_sysbios_knl_Clock_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 ti_sysbios_knl_Clock_Module_State__ ti_sysbios_knl_Clock_Module__state__V __attribute__ ((section(".data_ti_sysbios_knl_Clock_Module__state__V")));
 #endif
@@ -4981,7 +4999,9 @@ __T1_ti_sysbios_knl_Swi_Module_State__readyQ ti_sysbios_knl_Swi_Module_State_0_r
 #if defined (__ICCARM__)
 #pragma location = ".data_ti_sysbios_knl_Swi_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+ti_sysbios_knl_Swi_Module_State__ ti_sysbios_knl_Swi_Module__state__V __attribute__ ((section(".data:ti_sysbios_knl_Swi_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 ti_sysbios_knl_Swi_Module_State__ ti_sysbios_knl_Swi_Module__state__V __attribute__ ((section(".data_ti_sysbios_knl_Swi_Module__state__V")));
 #endif
@@ -5217,7 +5237,9 @@ __T1_ti_sysbios_knl_Task_Module_State__idleTask ti_sysbios_knl_Task_Module_State
 #if defined (__ICCARM__)
 #pragma location = ".data_ti_sysbios_knl_Task_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+ti_sysbios_knl_Task_Module_State__ ti_sysbios_knl_Task_Module__state__V __attribute__ ((section(".data:ti_sysbios_knl_Task_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 ti_sysbios_knl_Task_Module_State__ ti_sysbios_knl_Task_Module__state__V __attribute__ ((section(".data_ti_sysbios_knl_Task_Module__state__V")));
 #endif
@@ -5877,7 +5899,9 @@ __FAR__ const CT__xdc_runtime_Diags_dictBase xdc_runtime_Diags_dictBase__C = ((C
 #if defined (__ICCARM__)
 #pragma location = ".data_xdc_runtime_Error_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+xdc_runtime_Error_Module_State__ xdc_runtime_Error_Module__state__V __attribute__ ((section(".data:xdc_runtime_Error_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 xdc_runtime_Error_Module_State__ xdc_runtime_Error_Module__state__V __attribute__ ((section(".data_xdc_runtime_Error_Module__state__V")));
 #endif
@@ -6259,7 +6283,9 @@ __FAR__ const CT__xdc_runtime_Main_Object__table xdc_runtime_Main_Object__table_
 #if defined (__ICCARM__)
 #pragma location = ".data_xdc_runtime_Memory_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+xdc_runtime_Memory_Module_State__ xdc_runtime_Memory_Module__state__V __attribute__ ((section(".data:xdc_runtime_Memory_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 xdc_runtime_Memory_Module_State__ xdc_runtime_Memory_Module__state__V __attribute__ ((section(".data_xdc_runtime_Memory_Module__state__V")));
 #endif
@@ -6354,7 +6380,9 @@ __FAR__ const CT__xdc_runtime_Memory_defaultHeapInstance xdc_runtime_Memory_defa
 #if defined (__ICCARM__)
 #pragma location = ".data_xdc_runtime_Registry_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+xdc_runtime_Registry_Module_State__ xdc_runtime_Registry_Module__state__V __attribute__ ((section(".data:xdc_runtime_Registry_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 xdc_runtime_Registry_Module_State__ xdc_runtime_Registry_Module__state__V __attribute__ ((section(".data_xdc_runtime_Registry_Module__state__V")));
 #endif
@@ -6441,7 +6469,9 @@ __FAR__ const CT__xdc_runtime_Registry_Object__table xdc_runtime_Registry_Object
 #if defined (__ICCARM__)
 #pragma location = ".data_xdc_runtime_Startup_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+xdc_runtime_Startup_Module_State__ xdc_runtime_Startup_Module__state__V __attribute__ ((section(".data:xdc_runtime_Startup_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 xdc_runtime_Startup_Module_State__ xdc_runtime_Startup_Module__state__V __attribute__ ((section(".data_xdc_runtime_Startup_Module__state__V")));
 #endif
@@ -6689,7 +6719,9 @@ __FAR__ const CT__xdc_runtime_SysCallback_readyFxn xdc_runtime_SysCallback_ready
 #if defined (__ICCARM__)
 #pragma location = ".data_xdc_runtime_System_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+xdc_runtime_System_Module_State__ xdc_runtime_System_Module__state__V __attribute__ ((section(".data:xdc_runtime_System_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 xdc_runtime_System_Module_State__ xdc_runtime_System_Module__state__V __attribute__ ((section(".data_xdc_runtime_System_Module__state__V")));
 #endif
@@ -6806,7 +6838,9 @@ __FAR__ const CT__xdc_runtime_System_extendFxn xdc_runtime_System_extendFxn__C =
 #if defined (__ICCARM__)
 #pragma location = ".data_xdc_runtime_Text_Module__state__V"
 #endif
-#if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
+#if defined(__llvm__) && defined(__ti__)
+xdc_runtime_Text_Module_State__ xdc_runtime_Text_Module__state__V __attribute__ ((section(".data:xdc_runtime_Text_Module__state__V")));
+#elif defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
 xdc_runtime_Text_Module_State__ xdc_runtime_Text_Module__state__V __attribute__ ((section(".data_xdc_runtime_Text_Module__state__V")));
 #endif
@@ -7131,9 +7165,9 @@ xdc_Bool xdc_runtime_Main_Module_GateProxy_Module__startupDone__S( void )
 }
 
 /* create */
-xdc_runtime_Main_Module_GateProxy_Handle xdc_runtime_Main_Module_GateProxy_create( const xdc_runtime_Main_Module_GateProxy_Params *__prms, xdc_runtime_Error_Block *__eb )
+xdc_runtime_Main_Module_GateProxy_Handle xdc_runtime_Main_Module_GateProxy_create( const xdc_runtime_Main_Module_GateProxy_Params *prms, xdc_runtime_Error_Block *eb )
 {
-    return (xdc_runtime_Main_Module_GateProxy_Handle)ti_sysbios_gates_GateHwi_create((const ti_sysbios_gates_GateHwi_Params *)__prms, __eb);
+    return (xdc_runtime_Main_Module_GateProxy_Handle)ti_sysbios_gates_GateHwi_create((const ti_sysbios_gates_GateHwi_Params *)prms, eb);
 }
 
 /* delete */
@@ -7487,9 +7521,9 @@ __FAR__ const xdc_runtime_Core_ObjDesc ti_sysbios_knl_Task_Object__DESC__C = {
  */
 
 /* create */
-xdc_runtime_IHeap_Handle xdc_runtime_IHeap_create( xdc_runtime_IHeap_Module __mod, const xdc_runtime_IHeap_Params *__prms, xdc_runtime_Error_Block *__eb )
+xdc_runtime_IHeap_Handle xdc_runtime_IHeap_create( xdc_runtime_IHeap_Module mod, const xdc_runtime_IHeap_Params *prms, xdc_runtime_Error_Block *eb )
 {
-    return (xdc_runtime_IHeap_Handle) __mod->__sysp->__create(0, (const xdc_UChar*)__prms, sizeof (xdc_runtime_IHeap_Params), __eb);
+    return (xdc_runtime_IHeap_Handle) mod->__sysp->__create(0, (const xdc_UChar*)prms, sizeof (xdc_runtime_IHeap_Params), eb);
 }
 
 /* delete */
@@ -7504,9 +7538,9 @@ void xdc_runtime_IHeap_delete( xdc_runtime_IHeap_Handle *instp )
  */
 
 /* create */
-xdc_runtime_IGateProvider_Handle xdc_runtime_IGateProvider_create( xdc_runtime_IGateProvider_Module __mod, const xdc_runtime_IGateProvider_Params *__prms, xdc_runtime_Error_Block *__eb )
+xdc_runtime_IGateProvider_Handle xdc_runtime_IGateProvider_create( xdc_runtime_IGateProvider_Module mod, const xdc_runtime_IGateProvider_Params *prms, xdc_runtime_Error_Block *eb )
 {
-    return (xdc_runtime_IGateProvider_Handle) __mod->__sysp->__create(0, (const xdc_UChar*)__prms, sizeof (xdc_runtime_IGateProvider_Params), __eb);
+    return (xdc_runtime_IGateProvider_Handle) mod->__sysp->__create(0, (const xdc_UChar*)prms, sizeof (xdc_runtime_IGateProvider_Params), eb);
 }
 
 /* delete */
@@ -7677,10 +7711,6 @@ xdc_Ptr ti_sysbios_heaps_HeapCallback_Object__get__S(xdc_Ptr oa, xdc_Int i)
         return ((ti_sysbios_heaps_HeapCallback_Object__ *)oa) + i;
     }
 
-    if (ti_sysbios_heaps_HeapCallback_Object__count__C == 0) {
-        return NULL;
-    }
-
     /* the bogus 'const' in the cast suppresses Klocwork MISRA complaints */
     return ((ti_sysbios_heaps_HeapCallback_Object__ * const)ti_sysbios_heaps_HeapCallback_Object__table__C) + i;
 }
@@ -7699,7 +7729,7 @@ xdc_Ptr ti_sysbios_heaps_HeapCallback_Object__first__S( void )
 }
 
 /* Object__next__S */
-xdc_Ptr ti_sysbios_heaps_HeapCallback_Object__next__S( xdc_Ptr obj ) 
+xdc_Ptr ti_sysbios_heaps_HeapCallback_Object__next__S( xdc_Ptr obj )
 {
     xdc_runtime_Types_InstHdr *iHdr = ((xdc_runtime_Types_InstHdr *)obj) - 1;
 
@@ -7716,13 +7746,13 @@ xdc_Ptr ti_sysbios_heaps_HeapCallback_Object__create__S (
     xdc_CPtr __aa,
     const xdc_UChar *__paramsPtr,
     xdc_SizeT __psz,
-    xdc_runtime_Error_Block *__eb)
+    xdc_runtime_Error_Block *eb)
 {
     ti_sysbios_heaps_HeapCallback_Params __prms;
     ti_sysbios_heaps_HeapCallback_Object *__obj;
 
     /* common instance initialization */
-    __obj = xdc_runtime_Core_createObject__I(&ti_sysbios_heaps_HeapCallback_Object__DESC__C, NULL, &__prms, (xdc_CPtr)__paramsPtr, 0, __eb);
+    __obj = xdc_runtime_Core_createObject__I(&ti_sysbios_heaps_HeapCallback_Object__DESC__C, NULL, &__prms, (xdc_CPtr)__paramsPtr, 0, eb);
     if (__obj == NULL) {
         return NULL;
     }
@@ -7734,21 +7764,21 @@ xdc_Ptr ti_sysbios_heaps_HeapCallback_Object__create__S (
 }
 
 /* create */
-ti_sysbios_heaps_HeapCallback_Handle ti_sysbios_heaps_HeapCallback_create( const ti_sysbios_heaps_HeapCallback_Params *__paramsPtr, xdc_runtime_Error_Block *__eb )
+ti_sysbios_heaps_HeapCallback_Handle ti_sysbios_heaps_HeapCallback_create( const ti_sysbios_heaps_HeapCallback_Params *__paramsPtr, xdc_runtime_Error_Block *eb )
 {
-    ti_sysbios_heaps_HeapCallback_Params __prms;
-    ti_sysbios_heaps_HeapCallback_Object *__obj;
+    ti_sysbios_heaps_HeapCallback_Params prms;
+    ti_sysbios_heaps_HeapCallback_Object *obj;
 
 
     /* common instance initialization */
-    __obj = xdc_runtime_Core_createObject__I(&ti_sysbios_heaps_HeapCallback_Object__DESC__C, NULL, &__prms, (xdc_CPtr)__paramsPtr, 0, __eb);
-    if (__obj == NULL) {
+    obj = xdc_runtime_Core_createObject__I(&ti_sysbios_heaps_HeapCallback_Object__DESC__C, NULL, &prms, (xdc_CPtr)__paramsPtr, 0, eb);
+    if (obj == NULL) {
         return NULL;
     }
 
     /* module-specific initialization */
-    ti_sysbios_heaps_HeapCallback_Instance_init__E(__obj, &__prms);
-    return __obj;
+    ti_sysbios_heaps_HeapCallback_Instance_init__E(obj, &prms);
+    return obj;
 }
 
 /* construct */
@@ -7811,11 +7841,11 @@ xdc_Bool ti_sysbios_knl_Intrinsics_Module__startupDone__S( void )
  */
 
 
-xdc_Bool ti_sysbios_knl_Intrinsics_SupportProxy_Proxy__abstract__S( void )
+xdc_Bool ti_sysbios_knl_Intrinsics_SupportProxy_Proxy__abstract__S(void)
 {
     return 0;
 }
-xdc_CPtr ti_sysbios_knl_Intrinsics_SupportProxy_Proxy__delegate__S( void )
+xdc_CPtr ti_sysbios_knl_Intrinsics_SupportProxy_Proxy__delegate__S(void)
 {
     return (const void *)&ti_sysbios_family_arm_m3_IntrinsicsSupport_Module__FXNS__C;
 }
@@ -8025,11 +8055,11 @@ xdc_Bool xdc_runtime_Main_Module__startupDone__S( void )
 #undef Module__GP_query
 #define Module__GP_query xdc_runtime_Main_Module_GateProxy_Module_GateProxy_query
 
-xdc_Bool xdc_runtime_Main_Module_GateProxy_Proxy__abstract__S( void )
+xdc_Bool xdc_runtime_Main_Module_GateProxy_Proxy__abstract__S(void)
 {
     return 0;
 }
-xdc_CPtr xdc_runtime_Main_Module_GateProxy_Proxy__delegate__S( void )
+xdc_CPtr xdc_runtime_Main_Module_GateProxy_Proxy__delegate__S(void)
 {
     return (const void *)&ti_sysbios_gates_GateHwi_Module__FXNS__C;
 }
@@ -8065,11 +8095,11 @@ xdc_Bool xdc_runtime_Startup_Module__startupDone__S( void )
  */
 
 
-xdc_Bool xdc_runtime_System_SupportProxy_Proxy__abstract__S( void )
+xdc_Bool xdc_runtime_System_SupportProxy_Proxy__abstract__S(void)
 {
     return 0;
 }
-xdc_CPtr xdc_runtime_System_SupportProxy_Proxy__delegate__S( void )
+xdc_CPtr xdc_runtime_System_SupportProxy_Proxy__delegate__S(void)
 {
     return (const void *)&xdc_runtime_SysCallback_Module__FXNS__C;
 }
@@ -8104,8 +8134,12 @@ xdc_Bool xdc_runtime_Types_Module__startupDone__S( void )
 
 extern int __xdc__init(void);
 #ifdef __GNUC__
+#if defined(__llvm__) && defined(__ti__)
+    __attribute__ ((used))
+#else
 #ifndef __TI_COMPILER_VERSION__
     __attribute__ ((externally_visible))
+#endif
 #endif
 #endif
 __FAR__ int (* volatile __xdc__init__addr)(void) = &__xdc__init;

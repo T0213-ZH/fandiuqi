@@ -53,9 +53,9 @@ extern void SDI_TerminateConnection(void);
 static void SDI_fish_send_data_to_app(unsigned char *ptr, unsigned char len){
 
 	if(g_connect_status){
-		if(*ptr != FISH_EVT_VERSION){
-			SDI_RC4_crypt(&ptr[2], ptr[1]);
-		}
+		//if(*ptr != FISH_EVT_VERSION){
+		//	SDI_RC4_crypt(&ptr[2], ptr[1]);
+		//}
 
 		SDI_send_data_to_app(ptr, len);
 	}

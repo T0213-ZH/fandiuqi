@@ -2,79 +2,56 @@
 #define __SDI_BLE_H
 
 
-#define __NEW_PROTOCOL
+//#define __NEW_PROTOCOL
 
 extern unsigned char sdiProfile_SetParameter( unsigned char param, unsigned char len, void *value );
 #define SDI_send_data_to_app(buf, len)   sdiProfile_SetParameter(0, len, buf)
 
+#define PROTOCOL_CMD_HEADER (0x4D50)
+#define PROTOCOL_RSP_HEADER (0x504D)
 
-#ifndef __NEW_PROTOCOL
+//#ifndef __NEW_PROTOCOL
 
 //recvive from app command
-#define FISH_CMD_SETTING         (0x01)
-#define FISH_CMD_RAM_DATA        (0x02)
-#define FISH_CMD_DEVICES_INFO    (0x03)
-#define FISH_CMD_FW_VER          (0x04)
-#define FISH_CMD_NIGHT_MODE      (0x05)
-#define FISH_CMD_DEVICE_NAME     (0x06)
+#define ES_CMD_CONNECT_FLOW (0x00)
+#define ES_CMD_GET_VER      (0x01)
+#define ES_CMD_GET_MAC      (0x02)
+#define ES_CMD_BANDLE       (0x03)
+#define ES_CMD_ADV_INTERVAL (0x04)
+#define ES_CMD_EN_SPEAKER   (0x05)
+#define ES_CMD_SPEAKER_TIME (0x06)
+#define ES_CMD_LOSE_MODE    (0x07)
+#define ES_CMD_EN_PHONE     (0x08)
+#define ES_CMD_NUM          ES_CMD_EN_PHONE
+#define ES_RSP_FORMAT_ERR   (0x20)
+
+#define ES_RSP_SUCCESS      (0x00) //应答成功
+#define ES_RSP_ERR_FORMAT   (0x01) //数据格式错误
+#define ES_RSP_ERR_CRC      (0x02) //数据CRC错误
+#define ES_RSP_ERR_LENGTH   (0x03) //数据长度不匹配
+#define ES_RSP_ERR_DATA     (0x04) //数据内容错误
+#define ES_RSP_ERR_ID       (0x05) //命令ID不存在
+
+#define ES_RSP_ERR_INVALID_ID   (0x10)
+#define ES_RSP_ERR_APP_ID   (0x11)
+#define ES_RSP_ERR_FLOW     (0x12)
 
 
-//send to app command
-#define FISH_EVT_TEST_DATA       (0x01)
-#define FISH_EVT_BITE            (0x02)
-#define FISH_EVT_BAT_IND         (0x03)
-#define FISH_EVT_SET_PARAM       (0x04)
-#define FISH_EVT_VERSION         (0x05)
+struct protocol{
 
-
-struct fish_data_format{
-	unsigned char id;
+    unsigned short header;
 	unsigned char length;
+	unsigned char id;
 
-	unsigned char payload[18];
+	union payload_t{
+		struct{
+			unsigned char status;
+			unsigned char data[15];
+		}rsp;
+		unsigned char data[16];
+	}payload;	
 };
 
-#else
-
-#define FISH_VERSION_R          (0x31)
-
-
-#define PRO_ID_MASK             (0xE0)
-#define PRO_TYPE_MASK           (0x10)
-#define PRO_LEN_MASK            (0x07)
-
-#define PRO_ID_TEST_CMD         (0x01)
-#define PRO_ID_BITE_CMD         (0x02)
-#define PRO_ID_BAT_LEVEL_CMD    (0x03)
-#define PRO_ID_PARAM_SETGET_CMD (0x04)
-#define PRO_ID_GET_VER          (0x05)
-#define PRO_ID_DEVICE_NAME_CMD  (0x06)
-
-
-#define PARAM_LED_ONOFF         (0x80)
-#define PARAM_LED_FLASH         (0x40)
-#define PARAM_LED_BRIGH         (0x30)
-#define PARAM_THREAN            (0x0F)
-
-typedef struct protocol_packet_t{
-		
-	unsigned char len:3;
-	unsigned char res:1;
-	unsigned char type:1;
-	unsigned char id:3;
-
-	unsigned char payload[7];
-}protocol_packet;
-
-typedef struct ctr_param_t{
-	unsigned char threan:4;
-	unsigned char res:1;
-	unsigned char raw_en:1;
-	unsigned char led_flash:1;	
-	unsigned char led_onoff:1;
-}ctr_param;
-
-#endif
 
 extern void SDI_ble_data_parse(unsigned char *ptr, unsigned int len);
 extern void SDI_handle_process(unsigned long times);
@@ -86,7 +63,12 @@ extern void SDI_I2C_write(unsigned char device_id, unsigned char reg, unsigned c
 extern unsigned char SDI_I2C_read(unsigned char device_id, unsigned char reg);
 
 
-#define FIRMWARE_VER   (0x32) //表示3.0版本
+
+#define CMD_ID_LONG_PRESS (0x01)
+#define CMD_ID_TRIG_PRESS (0x02)
+extern void SDI_send_app_data_fdq(unsigned char id, unsigned char count, unsigned char times);//防丢器发数据接口
+
+#define FIRMWARE_VER   (0x31) //表示3.0版本
 /************** 版本更新记录 ***********************
 * 正式释放版本 31，2018.01.07
 *     

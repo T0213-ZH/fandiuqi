@@ -15,27 +15,14 @@
 static unsigned char g_connect_status = 0;
 unsigned char  g_fish_send_buf[20] = {0};
 
-#define SDI_FISH_IDLE    (0)
-#define SDI_FISH_INIT    (1)
-#define SDI_FISH_INITING (2)
-#define SDI_FISH_NORMAL  (3)
-#define SDI_FISH_DISABLE (4)
-static unsigned char g_fish_state = SDI_FISH_IDLE;
 
-static unsigned long fish_time_count = 0;
+#define CONN_STATUS_IDLE   (0)
+#define CONN_STATUS_APPID  (1)
+#define CONN_STATUS_USEID  (2)
+#define CONN_STATUS_NORMAL (3)
+static unsigned char conn_status_flow = CONN_STATUS_IDLE;
 
-static unsigned char g_bat_times_count = 0;
-static unsigned short g_bat_buf[10] = {0};
-static unsigned short g_adv_val = 0;
-static unsigned char g_bat_level = 4;
-
-#define FISH_CONN_TICK_TIMEOUT        (300) //10S
-static unsigned short fish_conn_tick_count = 0;
-
-int g_acc_val[3] = {0}; 
-static int g_acc_val_old[3] = {0, 0, 0};
-
-ctr_param g_ctr_param = {5, 0, 0, 1, 1};
+static const unsigned char es_app_id[4] = {0x45, 0x53, 0x5A, 0x48};//"ESTZ"
 
 
 extern unsigned short SDI_get_adc_value(void);
@@ -47,213 +34,307 @@ extern void sdi_change_device_name(uint8_t *p, uint8_t len);
 extern unsigned long times_tick_count;
 
 
-#define SDI_data_crypt(x) 
-//void SDI_data_crypt(unsigned char *ptr){
-//	extern uint8_t advertData[];
+struct protocol send_packet = {
+	.header = 0x504D,
+	.length = 0,
+	.id = 0,
+	.payload = {
+		.rsp = {
+			.status = 0,
+		},
+	},
+};
 
-//	*ptr = *ptr ^ advertData[11];
-//}
+typedef struct {
+
+	unsigned char bandle_id[4];
+	unsigned char adv_interval_time;
+	unsigned char speaker_work_time;
+}es_config_info;
+
+es_config_info g_es_config_info = {
+
+	{0xFF, 0xFF, 0xFF, 0xFF},
+	0,
+	0,
+};
 
 
 void SDI_connection_ind(unsigned char type){
 
 	g_connect_status = type;
-	g_bat_times_count = 0;
-	g_adv_val = 0;
-
-	if(g_connect_status){ //已连接
-		g_fish_state = SDI_FISH_INIT;
-
-		g_ctr_param.raw_en = 0;
-	}else{//断开连接
-		g_fish_state = SDI_FISH_DISABLE;
-	}	
-
-	if(g_ctr_param.led_onoff){
-		SDI_led_indication(SDI_LED_ON, 2, 200);
-	}else{
-		SDI_led_indication(SDI_LED_OFF, 2, 200);
-	}
+	if(type)
+		conn_status_flow = CONN_STATUS_APPID;
 }
 
 void protocol_send_event(unsigned char id){
 
 	if(!g_connect_status) return;
+}
+
+unsigned char connect_flow_check(struct protocol *pOwn, struct protocol *p){
+
+	unsigned char index = 0;
+	unsigned char rsp = 0;
 	
-	protocol_packet packet = {0};
-
-	packet.id = id;
-	packet.type = 0;
-	packet.res = 0;
-
-	if(packet.id == PRO_ID_TEST_CMD){
-
-		packet.len = 6;
-		packet.payload[0] = (g_acc_val[0] >> 8) & 0xFF;
-		packet.payload[1] = (g_acc_val[0] >> 0) & 0xFF;
-		
-		packet.payload[2] = (g_acc_val[1] >> 8) & 0xFF;
-		packet.payload[3] = (g_acc_val[1] >> 0) & 0xFF;
-					
-		packet.payload[4] = (g_acc_val[2] >> 8) & 0xFF;
-		packet.payload[5] = (g_acc_val[2] >> 0) & 0xFF;
-
-		SDI_data_crypt((void *)&packet);
-		SDI_send_data_to_app((void *)&packet, packet.len+1);
-
-	}else if(packet.id == PRO_ID_BITE_CMD){
-
-		packet.len = 1;
-
-		SDI_data_crypt((void *)&packet);
-		SDI_send_data_to_app((void *)&packet, 1);
+	if((pOwn->payload.data[0] == 0x00) && (conn_status_flow == CONN_STATUS_APPID)){ //APP ID check
+		if(pOwn->length != 0x08){
+			rsp = 1;
+		}else{
+			if((pOwn->payload.data[1] == es_app_id[0]) && (pOwn->payload.data[2] == es_app_id[1]) &&
+				(pOwn->payload.data[3] == es_app_id[2]) && (pOwn->payload.data[4] == es_app_id[3])){
+				conn_status_flow = CONN_STATUS_USEID;
+			}else{
+				rsp = 2;
+			}
+		}		
 	}
+
+	if((pOwn->payload.data[0] == 0x01) && (conn_status_flow == CONN_STATUS_USEID)){ //bandle id check
+		if(pOwn->length != 0x08){
+			rsp = 1;
+		}else{
+			if(((pOwn->payload.data[1] == g_es_config_info.bandle_id[0]) && (pOwn->payload.data[2] == g_es_config_info.bandle_id[1]) &&
+				(pOwn->payload.data[3] == g_es_config_info.bandle_id[2]) && (pOwn->payload.data[4] == g_es_config_info.bandle_id[3])) ||
+				((0xFF == g_es_config_info.bandle_id[0]) && (0xFF == g_es_config_info.bandle_id[1]) &&
+				(0xFF == g_es_config_info.bandle_id[2]) && (0xFF == g_es_config_info.bandle_id[3]))){
+			    conn_status_flow = CONN_STATUS_NORMAL;
+			}else{
+				rsp = 2;
+			}
+		}
+	}
+
+	if(!rsp){
+		p->payload.rsp.status = ES_RSP_SUCCESS;
+	}else{
+		p->payload.rsp.status = ES_RSP_ERR_LENGTH;
+		conn_status_flow = CONN_STATUS_IDLE;
+	}
+
+	return index;
+}
+
+unsigned char get_version(struct protocol *pOwn, struct protocol *p){
+	unsigned char index = 0;
+
+	if(pOwn->length == 0x03){
+		p->payload.rsp.status = ES_RSP_SUCCESS;
+		p->payload.rsp.data[index++] = FIRMWARE_VER;
+	}else{
+		p->payload.rsp.status = ES_RSP_ERR_LENGTH;
+	}
+	return index;
+}
+
+extern  uint8_t g_ownAddress[];
+unsigned char get_mac_address(struct protocol *pOwn, struct protocol *p){
+	unsigned char index = 0;
+
+	if(pOwn->length == 0x03){
+			
+		p->payload.rsp.status = ES_RSP_SUCCESS;
+		p->payload.rsp.data[index++] = g_ownAddress[5];
+		p->payload.rsp.data[index++] = g_ownAddress[4];
+		p->payload.rsp.data[index++] = g_ownAddress[3];
+		p->payload.rsp.data[index++] = g_ownAddress[2];
+		p->payload.rsp.data[index++] = g_ownAddress[1];
+		p->payload.rsp.data[index++] = g_ownAddress[0];
+	}else{	
+		p->payload.rsp.status = ES_RSP_ERR_LENGTH;	
+	}
+	return index;
+}
+
+unsigned char get_set_bandle(struct protocol *pOwn, struct protocol *p){
+
+	unsigned char rsp = 0;
+	unsigned char index = 0;
+
+	if(pOwn->payload.data[0] == 0x00){
+		
+		if(pOwn->length != 0x08){
+			rsp = 1;
+		}else{
+			g_es_config_info.bandle_id[0] = pOwn->payload.data[1];
+			g_es_config_info.bandle_id[1] = pOwn->payload.data[2];
+			g_es_config_info.bandle_id[2] = pOwn->payload.data[3];
+			g_es_config_info.bandle_id[3] = pOwn->payload.data[4];
+		}
+	}else if(pOwn->payload.data[0] == 0x01){
+	
+		if(pOwn->length != 0x04){
+			rsp = 1;
+		}else{
+			g_es_config_info.bandle_id[0] = 0xFF;
+			g_es_config_info.bandle_id[1] = 0xFF;
+			g_es_config_info.bandle_id[2] = 0xFF;
+			g_es_config_info.bandle_id[3] = 0xFF;
+		}
+	}else{
+		rsp = 1;
+	}
+
+	if(!rsp){
+		p->payload.rsp.status = ES_RSP_SUCCESS;
+	}else{
+		p->payload.rsp.status = ES_RSP_ERR_LENGTH;
+	}
+	return index;
+}
+
+unsigned char get_set_adv_interval(struct protocol *pOwn, struct protocol *p){
+
+	unsigned char rsp = 0;
+	unsigned char index = 0;
+
+	if(pOwn->payload.data[0] == 0x00){
+		
+		if(pOwn->length != 0x04){
+			rsp = 1;
+		}else{
+			p->payload.rsp.data[index++] = g_es_config_info.adv_interval_time;
+		}
+	}else if(pOwn->payload.data[0] == 0x01){
+	
+		if(pOwn->length != 0x05){
+			rsp = 1;
+		}else{
+			g_es_config_info.adv_interval_time = pOwn->payload.data[1];
+		}
+	}else{
+		rsp = 1;
+	}
+
+	if(!rsp){
+		p->payload.rsp.status = ES_RSP_SUCCESS;
+	}else{
+		p->payload.rsp.status = ES_RSP_ERR_LENGTH;
+	}
+	return index;
+}
+
+extern void SDI_en_speaker(unsigned char en);
+unsigned char en_speaker(struct protocol *pOwn, struct protocol *p){
+	
+	unsigned char index = 0;	
+
+	if(pOwn->length == 0x04){
+		p->payload.rsp.status = ES_RSP_SUCCESS;
+		SDI_en_speaker(pOwn->payload.data[0] != 0 ? 1: 0);
+	}else{	
+		p->payload.rsp.status = ES_RSP_ERR_LENGTH;	
+	}
+
+	return index;
+}
+
+unsigned char get_set_speaker_work_time(struct protocol *pOwn, struct protocol *p){
+
+	unsigned char index = 0;
+	unsigned char rsp;
+	
+	if(pOwn->payload.data[0] == 0x00){
+
+		if(pOwn->length != 0x04){
+			rsp = 1;
+		}else{
+			p->payload.rsp.data[index++] = g_es_config_info.speaker_work_time;
+		}
+	}else{
+		if(pOwn->length != 0x05){
+			rsp = 1;
+		}else{
+			g_es_config_info.speaker_work_time = pOwn->payload.data[1]; 
+		}
+	}
+
+	if(!rsp){
+		p->payload.rsp.status = ES_RSP_SUCCESS;
+	}else{
+		p->payload.rsp.status = ES_RSP_ERR_LENGTH;
+	}
+
+	return index;
+
+}
+
+
+unsigned char en_lose_mode(struct protocol *pOwn, struct protocol *p){
+
+	unsigned char index = 0;
+
+	p->payload.rsp.status = ES_RSP_SUCCESS;
+
+	return index;
+}
+
+unsigned char SDI_protoco_format_check(unsigned char *ptr, unsigned char len){
+
+	struct protocol *p = (void *)ptr;
+
+	if(len < 6) return ES_RSP_ERR_LENGTH;
+
+	if(p->length != len - 3) return ES_RSP_ERR_DATA;
+
+	if(p->header != PROTOCOL_CMD_HEADER) return ES_RSP_ERR_FORMAT;
+
+	if(p->id > ES_CMD_NUM) return ES_RSP_ERR_ID;
+
+	return ES_RSP_SUCCESS;
 }
 
 void SDI_ble_data_parse(unsigned char *ptr, unsigned int len){
+	unsigned char index = 0;
+	unsigned char rsp;
 
 	if(SDI_OTA_GetStatus()) return;
 
-	protocol_packet *packet = (void *)ptr;
-	unsigned char rsp = 0;
+	struct protocol *packet = (void *)ptr;
 
-	protocol_packet packet_rsp = {0};
-	unsigned char length = 0;
+	SDI_send_data_to_app((void *)ptr, len);
 
-	packet_rsp.id = packet->id;
-	packet_rsp.type = 0;
-	packet_rsp.res = 0;
+	rsp = SDI_protoco_format_check((void *)packet, len);
 
-	SDI_data_crypt(ptr);
+    if(rsp != ES_RSP_SUCCESS){
+		send_packet.id = ES_RSP_FORMAT_ERR;
+		send_packet.payload.rsp.status = rsp;
+    }else{
+
+		if(conn_status_flow != CONN_STATUS_NORMAL){
+			if(packet->id == ES_CMD_CONNECT_FLOW){
+				index = connect_flow_check((void *)packet, &send_packet);
+			}else{
+				send_packet.payload.rsp.status = ES_RSP_ERR_FLOW;
+			}
+		}else{
 	
-	if(packet->id == PRO_ID_BAT_LEVEL_CMD){//0X70
-		if(packet->type && !packet->len){
-			
-			packet_rsp.len = g_bat_level;
-			length = 1;
-			fish_conn_tick_count = 0;
-			rsp = 1;
+			switch(packet->id){
+
+				//case ES_CMD_CONNECT_FLOW: index = connect_flow_check((void *)packet, &send_packet);  break;
+				case ES_CMD_GET_VER:      index = get_version((void *)packet, &send_packet);         break;
+				case ES_CMD_GET_MAC:      index = get_mac_address((void *)packet, &send_packet);     break;
+				case ES_CMD_BANDLE:       index = get_set_bandle((void *)packet, &send_packet);      break;
+				case ES_CMD_ADV_INTERVAL: index = get_set_adv_interval((void *)packet, &send_packet);break;
+				case ES_CMD_EN_SPEAKER:   index = en_speaker((void *)packet, &send_packet);          break;
+				case ES_CMD_SPEAKER_TIME: index = get_set_speaker_work_time((void *)packet, &send_packet);break;
+				case ES_CMD_LOSE_MODE:    index = en_lose_mode((void *)packet, &send_packet);        break;
+				case ES_CMD_EN_PHONE:     break;
+				default: send_packet.payload.rsp.status = ES_RSP_ERR_INVALID_ID; break;
+			}
 		}
-		
-	}else if(packet->id == PRO_ID_PARAM_SETGET_CMD){
-		if(packet->len){//0x91 85
-			unsigned char *p = (void *)&g_ctr_param;
-			*p = packet->payload[0];
-			packet_rsp.len = 0;
-
-			SDI_led_indication(g_ctr_param.led_onoff, 0, 0); //更新指示灯状态
-		}else{//0x98
-			unsigned char *p = (void *)&g_ctr_param;
-
-			packet_rsp.res = 1;
-			packet_rsp.len = 1;
-			packet_rsp.payload[0] = *p;
-		}
-
-		length = packet_rsp.len + 1;
-		rsp = 1;
-		
-	}else if(packet->id == PRO_ID_GET_VER){//0xB0
-		if(packet->type){
-
-			packet_rsp.len = 1;
-			packet_rsp.payload[0] = FISH_VERSION_R;
-			length = packet_rsp.len + 1;
-			
-			rsp = 1;
-		}
-	}else if(packet->id == PRO_ID_DEVICE_NAME_CMD){//D6 54 5A 48 30 32 33
-
-		if(packet->type){
-			sdi_change_device_name(packet->payload, packet->len);
-			packet_rsp.len = 0;
-			length = packet_rsp.len + 1;
-			
-			rsp = 1;
-		}
+		send_packet.id = packet->id;					
 	}
-
-	if(rsp){	
-		
-		SDI_data_crypt((void *)&packet_rsp);
-		SDI_send_data_to_app((void *)&packet_rsp, length);
-	}	
+	//crc
+	send_packet.payload.rsp.data[index++] = 0xFF;
+	send_packet.payload.rsp.data[index++] = 0xFF;
+			
+	send_packet.header = PROTOCOL_RSP_HEADER;
+	send_packet.length = index + 2;	 //for status and id byte
 	
+	SDI_send_data_to_app((void *)&send_packet, send_packet.length + 3);
+
 }
-
-/************************ 鱼上钓算法 ***********************************/
-const unsigned short threshold_table[11] = {4000,2500,2000,1500,1200,800,500,400,200,10,0};
-#define X_MIN 0
-#define X_MAX 10000
-#define Y_MIN 10000  //13000
-#define Y_MAX 30000  //25000
-#define Z_MIN 0
-#define Z_MAX 10000
-
-#define X_DIFF_MIN 200    //400
-#define X_DIFF_MAX 10000
-#define Y_DIFF_MIN 800   //1000
-#define Y_DIFF_MAX 10000
-#define Z_DIFF_MIN 300
-#define Z_DIFF_MAX 5000
-
-static unsigned char fish(unsigned char level){ 
-		
-	unsigned int diff_X,diff_Y,diff_Z;
-	if(level > 10) level = 10;
-
-	diff_X = (g_acc_val_old[0] > g_acc_val[0]) ? (g_acc_val_old[0]-g_acc_val[0]) : (g_acc_val[0]-g_acc_val_old[0]);
-	diff_Y = (g_acc_val_old[1] > g_acc_val[1]) ? (g_acc_val_old[1]-g_acc_val[1]) : (g_acc_val[1]-g_acc_val_old[1]);	
-	diff_Z = (g_acc_val_old[2] > g_acc_val[2]) ? (g_acc_val_old[2]-g_acc_val[2]) : (g_acc_val[2]-g_acc_val_old[2]);
-
-	if((g_acc_val_old[1] > g_acc_val[1])) return 0;
-
-	if(((g_acc_val[0] > X_MIN/*ACC_X_LEVEL_MIN[level]*/ ) && (g_acc_val[0] < X_MAX))		
-		&& ((g_acc_val[1] > Y_MIN) && (g_acc_val[1] < Y_MAX))
-		&& ((g_acc_val[2] > Z_MIN) && (g_acc_val[2] < Z_MAX)) 		
-		&& ((diff_X > (X_DIFF_MIN+threshold_table[level])) && (diff_X < X_DIFF_MAX))
-		&& ((diff_Y > Y_DIFF_MIN) && (diff_Y < Y_DIFF_MAX))
-		&& ((diff_Z > Z_DIFF_MIN) && (diff_Z < Z_DIFF_MAX))){
-			return 1;
-	}
-			
-	return 0;
-}
-/********************************************************************************************************************/
-
-unsigned char SDI_get_msa_data(unsigned long times){
-
-	static unsigned long time_count = 0;
-
-	g_acc_val_old[0] = g_acc_val[0];		
-	g_acc_val_old[1] = g_acc_val[1];	
-	g_acc_val_old[2] = g_acc_val[2];
-
-
-	if(msa_read_acc()){
-
-	//if(0){
-	if(!g_ctr_param.raw_en){
-		if(fish(g_ctr_param.threan)){
-			if(times > time_count){
-				time_count = times + 30;
-				//SDI_fish_send_data_to_app((void *)&packet, packet.length + 2);
-				protocol_send_event(PRO_ID_BITE_CMD);
-				
-				if(g_ctr_param.led_flash){
-					SDI_led_indication(g_ctr_param.led_onoff, 4, 200);
-				}
-			}	
-		}
-	}
-	else{
-		protocol_send_event(PRO_ID_TEST_CMD);
-	}
-	
-    }
-	return 0;
-}
-
 
 
 #define BAT_LEVEL_MAX (4)
@@ -267,67 +348,7 @@ unsigned char g_batter_level = 5;
 
 void bat_process_test(unsigned long times){
 
-#if 0
-//测试函数
-{
-	static unsigned long test_count = 0;
-	static unsigned short adc_value = 0;
-	unsigned char buf_log[5];
-	if(times > test_count){
-		adc_value = SDI_get_adc_value();
-		test_count = times + 20;
-
-		buf_log[0] = 0xAA;
-		buf_log[1] = 0xBB;
-		buf_log[2] = (adc_value >> 8) & 0xFF;
-		buf_log[3] = (adc_value >> 0) & 0xFF;
-		sdiProfile_SetParameter(0, 4, buf_log);
-
-	}	
-}
-
-#else
-
-	static unsigned long bat_times_get_adc_count = 0;
-
-	if(times >= bat_times_get_adc_count + 10){			
-		unsigned short adc_value;
-		unsigned char i;
-			
-		bat_times_get_adc_count = times;
-		adc_value = SDI_get_adc_value();
-
-		if(adc_value == 0xFFFF) return;
-		
-		if(!g_bat_times_count){
-			g_bat_buf[g_bat_times_count] = adc_value;
-		}else{
-			for(i=g_bat_times_count; i>0; i--){
-				if(g_bat_buf[i-1] > adc_value){
-					g_bat_buf[i] = g_bat_buf[i-1];
-				}else{
-					break;
-				}
-			}
-			g_bat_buf[i] = adc_value; 
-		}
-
-		if(++g_bat_times_count >= 10){
-			unsigned char level = 0;
-			
-
-			g_adv_val = g_bat_buf[6];
-			for(level=1; level<BAT_LEVEL_MAX; level++){
-				if(g_adv_val < battery_level_table[level])
-					break;
-			}
-			g_bat_times_count = 0;
-
-			if(level < g_bat_level) g_bat_level = level;
-			g_adv_val = 0;
-		}			
-	}
-#endif	
+	
 }
 
 uint64_t sys_time_tick_second = 0;
@@ -338,10 +359,6 @@ unsigned long SDI_BLE_GetCurTimes(void){
 extern void SDI_Watchdog_clear(void);
 void SDI_handle_process(unsigned long times){	
 
-//	if(SDI_OTA_GetStatus() == SDI_OTA_END_STATE) 
-//		return;
-	
-	static unsigned char msa_init_flag = 0;
 	static uint32_t count_flag = 0;
 
 	if(++count_flag == 20){
@@ -353,66 +370,23 @@ void SDI_handle_process(unsigned long times){
 	if(!SDI_OTA_GetStatus())
 		bat_process_test(times);
 
-	if(SDI_FISH_IDLE == g_fish_state){		
-
-	}else if(SDI_FISH_INIT == g_fish_state){	
-
-		if(times > fish_time_count){
-			SDI_I2C_init(1);
-			msa_init_flag = 0;
-			fish_time_count = 0;
-			g_fish_state = SDI_FISH_INITING;
-		}
-
-	}else if(SDI_FISH_INITING == g_fish_state){ 	
-		
-		if(times > fish_time_count){
-			if(!msa_init_flag){
-				
-				if(!MSA_init(0)){
-					msa_init_flag = 1;
-					fish_time_count = times + 2;
-				}else{
-					static unsigned char msa_init_err_flag = 0;
-					SDI_I2C_init(0);			
-
-					msa_init_err_flag = msa_init_err_flag ? 0: 1;
-					SDI_led_indication(msa_init_err_flag, 0, 0);
-
-					fish_time_count = times + 5;	
-				}
-			}else if(msa_init_flag){
-				MSA_init(1);
-				
-				//SDI_led_indication(SDI_LED_ON, 2, 200);
-				g_fish_state = SDI_FISH_NORMAL;
-				fish_time_count = times + 2;
-
-				fish_conn_tick_count = 0;
-			}	
-		}
-	}else if(SDI_FISH_NORMAL == g_fish_state){
-
-		if(SDI_OTA_Process(sys_time_tick_second)){
-			SDI_led_indication(((sys_time_tick_second & 1) ? 1: 0), 0, 0);
-			
-		}else{
-			SDI_get_msa_data(times);
-
-			fish_conn_tick_count++;
-			if(fish_conn_tick_count > FISH_CONN_TICK_TIMEOUT){
-				SDI_TerminateConnection();
-				fish_conn_tick_count = 0;
-			}		
-		}
-		
-	}else if(SDI_FISH_DISABLE == g_fish_state){
-
-		SDI_I2C_init(0);
-		//...disable ota
-		g_fish_state = SDI_FISH_IDLE;
-	}
-
 }
 
+unsigned char button_send_buf[7] = {0x4D, 0x50, 0x01, 0x01, 0x00, 0xFF, 0xFF};
+
+void SDI_send_app_data_fdq(unsigned char id, unsigned char count, unsigned char times){
+
+	if(!g_connect_status) return;
+
+	button_send_buf[4] = id;
+	button_send_buf[5] = count;
+	button_send_buf[6] = times;
+	
+	SDI_send_data_to_app(button_send_buf, 7);
+}
+
+void SDI_send_app_debug(unsigned char *p, unsigned char len){
+
+	SDI_send_data_to_app(p, len);
+}
 

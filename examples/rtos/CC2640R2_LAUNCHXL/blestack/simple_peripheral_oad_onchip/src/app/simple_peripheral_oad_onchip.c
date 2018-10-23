@@ -281,9 +281,9 @@ uint8_t sbpTaskStack[SBP_TASK_STACK_SIZE];
 
 uint8_t fish_adv_data[31] = {
 	0x02, 0x01, 0x06,
-	0x03, 0x03, 0x90, 0xfe,
+	0x03, 0x03, 0x44, 0x46,
 	0x05, 0xff, 0x00, 0x00, 0x00, 0x31,
-	0x05, 0x09, 'f', 'i', 's', 'h'
+	0x0B, 0x09, 'e', 'a', 's', 'y','s','e','a','r','c','h'
 };
 
 // Globals used for ATT Response retransmission
@@ -569,7 +569,7 @@ static void SimpleBLEPeripheral_init(void)
 //                                    stackImageHeader->softVer[1],
 //                                    _imgHdr.softVer[2],
 //                                    _imgHdr.softVer[3]};
-
+/*
 	{
 		unsigned char temp_buf[10];
 		
@@ -587,7 +587,7 @@ static void SimpleBLEPeripheral_init(void)
 			}
   		}
 	}
-
+*/
   // Setup the GAP
   GAP_SetParamValue(TGAP_CONN_PAUSE_PERIPHERAL, DEFAULT_CONN_PAUSE_PERIPHERAL);
 
@@ -785,16 +785,74 @@ static void SimpleBLEPeripheral_init(void)
  *
  * @return  None.
  */
+unsigned char  button_troggle_time_3s = 0;
+unsigned char  bt_count = 0, bt_count_bak = 0;
+
+
+void gpioButtonFxn0(uint_least8_t index){
+
+	//GPIO_toggle(CC2640R2_LAUNCHXL_GPIO_LED_GREEN);
+	//Task_sleep(100);
+
+	if(!GPIO_read(CC2640R2_LAUNCHXL_GPIO_S1)){
+
+		if(bt_count == bt_count_bak){
+
+			if(!bt_count)
+				button_troggle_time_3s = 60;
+			
+			bt_count++;
+		}
+	}
+}
+
+#define USED_PWM_ENABLE
+
+#ifdef USED_PWM_ENABLE
+PWM_Params g_pwm_params;
+PWM_Handle g_pwm_handle = NULL;
+uint8_t g_pwm_used_flag = 0;
+#endif
+
+void SDI_en_speaker(unsigned char en){
+
+	if(en){
+		PWM_start(g_pwm_handle);
+	}else{
+		PWM_stop(g_pwm_handle);
+	}
+}
+
 static void SimpleBLEPeripheral_taskFxn(UArg a0, UArg a1)
 {
   // Initialize application
   SimpleBLEPeripheral_init();
-  SDI_led_indication(1, 2, 200);
+  //SDI_led_indication(0, 2, 200);
 
-  I2C_init();
+  //I2C_init();
 
   //SDI_Watchdog_Init();
 
+  GPIO_init();
+  GPIO_setCallback(CC2640R2_LAUNCHXL_GPIO_S1, gpioButtonFxn0);
+  GPIO_enableInt(CC2640R2_LAUNCHXL_GPIO_S1);
+
+#ifdef USED_PWM_ENABLE
+  PWM_init();
+  PWM_Params_init(&g_pwm_params);
+  g_pwm_params.periodUnits = PWM_PERIOD_US;
+  g_pwm_params.periodValue = 250;
+  g_pwm_params.dutyUnits = PWM_DUTY_US;
+  g_pwm_params.dutyValue = 125;
+
+  g_pwm_handle = PWM_open(CC2640R2_LAUNCHXL_PWM0, &g_pwm_params);
+  if(g_pwm_handle == NULL){
+	while(1);
+  }
+  //PWM_setDuty(g_pwm_handle, 
+
+  PWM_start(g_pwm_handle);
+#endif  
   // Application main loop
   for (;;)
   {
@@ -901,7 +959,7 @@ static void SimpleBLEPeripheral_taskFxn(UArg a0, UArg a1)
         // Perform periodic application task
         SimpleBLEPeripheral_performPeriodicTask();
       }
-    }
+    }	
   }
 }
 
@@ -919,7 +977,8 @@ static void SimpleBLEPeripheral_taskFxn(UArg a0, UArg a1)
  * @return  None.
  */
 uint64_t time_tick_count = 0;
-
+unsigned char bt_three_times_trg = 0;
+extern void SDI_send_app_debug(unsigned char *p, unsigned char len);
 static void SimpleBLEPeripheral_performPeriodicTask(void)
 {
 //  uint8_t valueToCopy;
@@ -937,6 +996,46 @@ static void SimpleBLEPeripheral_performPeriodicTask(void)
 
 	time_tick_count++;	
 	SDI_handle_process(time_tick_count);	
+	
+
+	if(button_troggle_time_3s){
+		button_troggle_time_3s--;
+		if(button_troggle_time_3s == 0){
+			if(bt_count == 1){
+				if(!GPIO_read(CC2640R2_LAUNCHXL_GPIO_S1)){
+					SDI_send_app_data_fdq(0x01, bt_count, button_troggle_time_3s);
+				}
+			}
+			bt_count = 0;
+		}
+	}
+
+	if(bt_count >= 3){
+
+		SDI_send_app_data_fdq(0x02, bt_count, 0);
+		bt_count = 0;
+		button_troggle_time_3s = 1;
+
+#ifdef USED_PWM_ENABLE
+		g_pwm_used_flag++;
+		if(g_pwm_used_flag & 0x01){
+			PWM_start(g_pwm_handle);
+		}else{
+			PWM_stop(g_pwm_handle);
+		}
+#endif
+	}
+
+	if(bt_count != bt_count_bak){
+		bt_count_bak = bt_count;
+	}	
+
+#ifdef USED_PWM_ENABLE
+
+	if(time_tick_count == 20){
+		PWM_stop(g_pwm_handle);
+	}
+#endif	
 }
 
 /*********************************************************************
@@ -1299,16 +1398,17 @@ static void SimpleBLEPeripheral_processAppMsg(sbpEvt_t *pMsg)
  *
  * @return  None.
  */
+ uint8_t g_ownAddress[B_ADDR_LEN];
 static void SimpleBLEPeripheral_processStateChangeEvt(gaprole_States_t newState)
 {
   switch ( newState )
   {
     case GAPROLE_STARTED:
       {
-        uint8_t ownAddress[B_ADDR_LEN];
+//         uint8_t ownAddress[B_ADDR_LEN];
 //        uint8_t systemId[DEVINFO_SYSTEM_ID_LEN];
 
-        GAPRole_GetParameter(GAPROLE_BD_ADDR, ownAddress);
+        GAPRole_GetParameter(GAPROLE_BD_ADDR, g_ownAddress);
 
 //        // use 6 bytes of device address for 8 bytes of system ID value
 //        systemId[0] = ownAddress[0];
@@ -1328,9 +1428,9 @@ static void SimpleBLEPeripheral_processStateChangeEvt(gaprole_States_t newState)
 		{
 //			uint8_t arc4_key[3];			
 			
-			fish_adv_data[9]   = ownAddress[2];
-			fish_adv_data[10]  = ownAddress[1];
-			fish_adv_data[11]  = ownAddress[0];
+			fish_adv_data[9]   = g_ownAddress[2];
+			fish_adv_data[10]  = g_ownAddress[1];
+			fish_adv_data[11]  = g_ownAddress[0];
 
 //			arc4_key[0] = advertData[4] ^ advertData[9] ;
 //			arc4_key[1] = advertData[5] ^ advertData[10];
@@ -1343,7 +1443,7 @@ static void SimpleBLEPeripheral_processStateChangeEvt(gaprole_States_t newState)
 		}
 
         // Display device address
-        Display_print0(dispHandle, 1, 0, Util_convertBdAddr2Str(ownAddress));
+        Display_print0(dispHandle, 1, 0, Util_convertBdAddr2Str(g_ownAddress));
         Display_print0(dispHandle, 2, 0, "Initialized");
       }
       break;
